@@ -6,6 +6,7 @@ using UnityEngine.EventSystems;
 public class DraggableObject : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
 	private Plane frontal, lateral, currentPlane, lastPlane;
+    private Vector2 lastPosition;
 
 	private void Awake ()
 	{
@@ -16,14 +17,17 @@ public class DraggableObject : MonoBehaviour, IBeginDragHandler, IDragHandler, I
 	public void OnBeginDrag(PointerEventData eventData)
 	{
 		Debug.LogWarning ("Start drag");
-	}
+        lastPosition = eventData.position;
+    }
 
 	public void OnDrag(PointerEventData eventData)
 	{
-		//transform.position = eventData.position;
-		Vector3 displacement = SelectDirection (eventData.delta);
-		if (eventData.delta.sqrMagnitude > 1f)
+        if(Vector3.Distance(lastPosition, eventData.position) > 10)
+        {
+            lastPosition = eventData.position;
+		    Vector3 displacement = SelectDirection (eventData.delta);
 			MoveUnit (displacement * Mathf.Sign (eventData.delta.x));
+        }
 	}
 		
 	public void OnEndDrag(PointerEventData eventData)
@@ -34,40 +38,39 @@ public class DraggableObject : MonoBehaviour, IBeginDragHandler, IDragHandler, I
 	private void MoveUnit (Vector3 direction)
 	{
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-        float distance = 0f;
+        float distance;
         if (currentPlane.Raycast(ray, out distance))
         {
             Vector3 hitPosition = ray.GetPoint(distance);
             transform.position = new Vector3(hitPosition.x, 1f, hitPosition.z);
         }
-        //transform.Translate (direction.normalized);
 	}
 
 	private Vector3 SelectDirection (Vector2 drag)
 	{
 		Vector3 spatialDrag = GetCameraRelativeDrag (drag);
-		Debug.DrawRay (Camera.main.transform.position, spatialDrag);
 		float lateralDot = Vector3.Dot (lateral.normal, spatialDrag);
 		float frontalDot = Vector3.Dot (frontal.normal, spatialDrag);
-
-        //lastPlane = currentPlane;
+        Vector3 normal;
+        lastPlane = currentPlane;
 
         if (Mathf.Abs(lateralDot) < Mathf.Abs(frontalDot))
         {
             currentPlane = lateral;
-            /*
-            if(currentPlane.normal != lastPlane.normal)
-            {
-                lastPlane.Translate()
-            }
-            */
-            return frontal.normal;
+            normal = frontal.normal;
         }
         else
         {
             currentPlane = frontal;
-            return lateral.normal;
+            normal = lateral.normal;
         }
+
+        if (currentPlane.normal != lastPlane.normal)
+        {
+            Debug.Log("Plane Changed");
+        }
+
+        return normal;
     }
 			
 	private Vector3 GetCameraRelativeDrag (Vector2 drag)
