@@ -5,7 +5,7 @@ using UnityEngine.EventSystems;
 
 public class DraggableObject : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
-	private Plane frontal, lateral;
+	private Plane frontal, lateral, currentPlane;
 
 	private void Awake ()
 	{
@@ -33,7 +33,14 @@ public class DraggableObject : MonoBehaviour, IBeginDragHandler, IDragHandler, I
 
 	private void MoveUnit (Vector3 direction)
 	{
-		transform.Translate (direction.normalized);
+        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        float distance = 0f;
+        if (currentPlane.Raycast(ray, out distance))
+        {
+            Vector3 hitPosition = ray.GetPoint(distance);
+            transform.position = new Vector3(hitPosition.x, 1f, hitPosition.z);
+        }
+        //transform.Translate (direction.normalized);
 	}
 
 	private Vector3 SelectDirection (Vector2 drag)
@@ -42,8 +49,17 @@ public class DraggableObject : MonoBehaviour, IBeginDragHandler, IDragHandler, I
 		Debug.DrawRay (Camera.main.transform.position, spatialDrag);
 		float lateralDot = Vector3.Dot (lateral.normal, spatialDrag);
 		float frontalDot = Vector3.Dot (frontal.normal, spatialDrag);
-		return (Mathf.Abs(lateralDot) < Mathf.Abs(frontalDot))? frontal.normal : lateral.normal;
-	}
+        if (Mathf.Abs(lateralDot) < Mathf.Abs(frontalDot))
+        {
+            currentPlane = lateral;
+            return frontal.normal;
+        }
+        else
+        {
+            currentPlane = frontal;
+            return lateral.normal;
+        }
+    }
 			
 	private Vector3 GetCameraRelativeDrag (Vector2 drag)
 	{
