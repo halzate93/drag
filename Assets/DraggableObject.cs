@@ -6,7 +6,6 @@ using UnityEngine.EventSystems;
 public class DraggableObject : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
 	private Plane frontal, lateral, currentPlane;
-    private Vector2 lastPosition;
 
 	private void Awake ()
 	{
@@ -17,18 +16,15 @@ public class DraggableObject : MonoBehaviour, IBeginDragHandler, IDragHandler, I
 	public void OnBeginDrag(PointerEventData eventData)
 	{
 		Debug.LogWarning ("Start drag");
-        lastPosition = eventData.position;
     }
 
 	public void OnDrag(PointerEventData eventData)
 	{
-        if(Vector3.Distance(lastPosition, eventData.position) > 10)
-        {
-            lastPosition = eventData.position;
-		    Vector3 displacement = SelectDirection (eventData.delta);
-			MoveUnit (displacement * Mathf.Sign (eventData.delta.x));
-        }
+		Vector3 displacement = SelectDirection (eventData.delta);
+        if (eventData.delta.sqrMagnitude > 1f)
+            MoveUnit(displacement * Mathf.Sign (eventData.delta.x));
 	}
+    
 		
 	public void OnEndDrag(PointerEventData eventData)
 	{
