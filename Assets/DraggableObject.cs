@@ -5,7 +5,7 @@ using UnityEngine.EventSystems;
 
 public class DraggableObject : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
-	private Plane frontal, lateral, currentPlane, lastPlane;
+	private Plane frontal, lateral, currentPlane;
     private Vector2 lastPosition;
 
 	private void Awake ()
@@ -52,28 +52,28 @@ public class DraggableObject : MonoBehaviour, IBeginDragHandler, IDragHandler, I
 		float lateralDot = Vector3.Dot (lateral.normal, spatialDrag);
 		float frontalDot = Vector3.Dot (frontal.normal, spatialDrag);
         Vector3 normal;
-        lastPlane = currentPlane;
 
         if (Mathf.Abs(lateralDot) < Mathf.Abs(frontalDot))
         {
-            currentPlane = lateral;
+            SetCurrentPlane(ref lateral);
             normal = frontal.normal;
         }
         else
         {
-            currentPlane = frontal;
+            SetCurrentPlane(ref frontal);
             normal = lateral.normal;
-        }
-
-        if (currentPlane.normal != lastPlane.normal)
-        {
-            Debug.Log("Plane Changed");
         }
 
         return normal;
     }
-			
-	private Vector3 GetCameraRelativeDrag (Vector2 drag)
+
+    private void SetCurrentPlane(ref Plane planeToAssign)
+    {
+        planeToAssign.SetNormalAndPosition(planeToAssign.normal, transform.position);
+        currentPlane = planeToAssign;
+    }
+
+    private Vector3 GetCameraRelativeDrag (Vector2 drag)
 	{
 		return Camera.main.transform.localRotation * (Vector3) drag;
 	}
