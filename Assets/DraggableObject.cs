@@ -6,10 +6,18 @@ using UnityEngine.EventSystems;
 public class DraggableObject : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
 	private Plane frontal, lateral, currentPlane;
+    private new Rigidbody rigidbody;
+    private Vector3 targetPosition;
+
+    private Vector3 Position
+    {
+        get { return rigidbody.position; }
+    }
 
 	private void Awake ()
 	{
-		frontal = new Plane (Vector3.back, Vector3.zero);
+        rigidbody = GetComponent<Rigidbody>();
+        frontal = new Plane (Vector3.back, Vector3.zero);
 		lateral = new Plane (Vector3.right, Vector3.zero);
 	}
 
@@ -24,25 +32,30 @@ public class DraggableObject : MonoBehaviour, IBeginDragHandler, IDragHandler, I
         if (eventData.delta.sqrMagnitude > 1f)
             MoveUnit(displacement * Mathf.Sign (eventData.delta.x));
 	}
-    
 		
 	public void OnEndDrag(PointerEventData eventData)
 	{
-		Debug.LogWarning ("End drag!");	
-	}
+        targetPosition = new Vector3(Mathf.Round(Position.x), Position.y, Mathf.Round(Position.z));
+    }
 
-	private void MoveUnit (Vector3 direction)
+    private void MoveUnit (Vector3 direction)
 	{
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
         float distance;
         if (currentPlane.Raycast(ray, out distance))
         {
             Vector3 hitPosition = ray.GetPoint(distance);
-            transform.position = new Vector3(hitPosition.x, 1f, hitPosition.z);
+            targetPosition = new Vector3(hitPosition.x, 1f, hitPosition.z);
         }
 	}
 
-	private Vector3 SelectDirection (Vector2 drag)
+    private void FixedUpdate()
+    {
+        Vector3 movement = targetPosition - rigidbody.position;
+        rigidbody.velocity = movement / Time.fixedDeltaTime;
+    }
+
+    private Vector3 SelectDirection (Vector2 drag)
 	{
 		Vector3 spatialDrag = GetCameraRelativeDrag (drag);
 		float lateralDot = Vector3.Dot (lateral.normal, spatialDrag);
