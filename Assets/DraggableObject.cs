@@ -5,6 +5,9 @@ using UnityEngine.EventSystems;
 
 public class DraggableObject : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
+    [SerializeField]
+    private float tileDistance = 1f;
+
 	private Plane frontal, lateral, currentPlane;
     private new Rigidbody rigidbody;
     private Vector3 targetPosition;
@@ -35,7 +38,12 @@ public class DraggableObject : MonoBehaviour, IBeginDragHandler, IDragHandler, I
 		
 	public void OnEndDrag(PointerEventData eventData)
 	{
-        targetPosition = new Vector3(Mathf.Round(Position.x), Position.y, Mathf.Round(Position.z));
+        targetPosition = new Vector3(GetSnapPosition(Position.x), Position.y, GetSnapPosition(Position.z));
+    }
+
+    private float GetSnapPosition(float position)
+    {
+        return tileDistance * Mathf.Round(position / tileDistance);
     }
 
     private void MoveUnit (Vector3 direction)
