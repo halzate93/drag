@@ -7,8 +7,11 @@ public class DraggableObject : MonoBehaviour, IBeginDragHandler, IDragHandler, I
 {
     [SerializeField]
     private float tileDistance = 1f;
+    [SerializeField]
+    private float thresholdToCenter = 0.2f;
 
-	private Plane frontal, lateral, currentPlane;
+    private Plane frontal, lateral, currentPlane;
+    private Vector3 normal;
     private new Rigidbody rigidbody;
     private Vector3 targetPosition;
 
@@ -31,9 +34,9 @@ public class DraggableObject : MonoBehaviour, IBeginDragHandler, IDragHandler, I
 
 	public void OnDrag(PointerEventData eventData)
 	{
-		Vector3 displacement = SelectDirection (eventData.delta);
+		SelectDirection (eventData.delta);
         if (eventData.delta.sqrMagnitude > 1f)
-            MoveUnit(displacement * Mathf.Sign (eventData.delta.x));
+            MoveUnit(eventData.position);
 	}
 		
 	public void OnEndDrag(PointerEventData eventData)
@@ -46,9 +49,9 @@ public class DraggableObject : MonoBehaviour, IBeginDragHandler, IDragHandler, I
         return tileDistance * Mathf.Round(position / tileDistance);
     }
 
-    private void MoveUnit (Vector3 direction)
+    private void MoveUnit (Vector3 position)
 	{
-        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        Ray ray = Camera.main.ScreenPointToRay(position);
         float distance;
         if (currentPlane.Raycast(ray, out distance))
         {
@@ -63,31 +66,34 @@ public class DraggableObject : MonoBehaviour, IBeginDragHandler, IDragHandler, I
         rigidbody.velocity = movement / Time.fixedDeltaTime;
     }
 
-    private Vector3 SelectDirection (Vector2 drag)
+    private void SelectDirection (Vector2 drag)
 	{
 		Vector3 spatialDrag = GetCameraRelativeDrag (drag);
 		float lateralDot = Vector3.Dot (lateral.normal, spatialDrag);
 		float frontalDot = Vector3.Dot (frontal.normal, spatialDrag);
-        Vector3 normal;
 
         if (Mathf.Abs(lateralDot) < Mathf.Abs(frontalDot))
-        {
-            SetCurrentPlane(ref lateral);
-            normal = frontal.normal;
-        }
+            TrySetPlaneAndNormal(ref lateral, frontal.normal);
         else
-        {
-            SetCurrentPlane(ref frontal);
-            normal = lateral.normal;
-        }
-
-        return normal;
+            TrySetPlaneAndNormal(ref frontal, lateral.normal);
     }
 
-    private void SetCurrentPlane(ref Plane planeToAssign)
+    private void TrySetPlaneAndNormal(ref Plane planeToAssign, Vector3 normalToAssign)
+    {
+        if(currentPlane.normal != planeToAssign.normal)
+        {
+            float residue = Vector3.Scale(normal, Position).magnitude % tileDistance;
+            if(residue > (1-(thresholdToCenter/2)) || residue < (0 + (thresholdToCenter/2)))
+                planeToAssign = SetPlaneAndNormal(planeToAssign, normalToAssign);
+        }
+    }
+
+    private Plane SetPlaneAndNormal(Plane planeToAssign, Vector3 normalToAssign)
     {
         planeToAssign.SetNormalAndPosition(planeToAssign.normal, transform.position);
         currentPlane = planeToAssign;
+        normal = normalToAssign;
+        return planeToAssign;
     }
 
     private Vector3 GetCameraRelativeDrag (Vector2 drag)
